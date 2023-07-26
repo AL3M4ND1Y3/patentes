@@ -193,7 +193,7 @@ def on_enter_press():
         switch_to_orange()
 
 #Camara
-cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture(1, cv2.CAP_DSHOW)
 patente_detectado = False
 
 while not patente_detectado:
