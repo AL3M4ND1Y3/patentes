@@ -2,6 +2,40 @@ import mysql.connector as db
 import json
 from datetime import datetime
 
+
+def obtener_username(placa):
+    with open('config.json') as database_file:
+        keys = json.load(database_file)
+
+    # Crear conexión a la base de datos
+    conex = db.connect(
+        host=keys["host"],
+        user=keys["user"],
+        password=keys["password"],
+        database=keys["database"],
+        port=keys["port"]
+    )
+
+    cursor = conex.cursor()
+    query = """
+        SELECT users.name
+        FROM vehiculos
+        INNER JOIN vehiculos_users ON vehiculos.id = vehiculos_users.vehiculo_id
+        INNER JOIN users ON vehiculos_users.user_id = users.id
+        WHERE vehiculos.placa = %s;
+        """
+    cursor.execute(query, (placa,))
+    result = cursor.fetchone()
+    print(result)
+    
+    if result is None:
+        return "Bienvenido, Unanse a nuestra familia descargandose la Aplicacion 'Likin Parking'"
+    elif len(result) == 0:
+        return "Bienvenido, Unanse a nuestra familia descargandose la Aplicacion 'Likin Parking'"
+    else:
+        return "Bienvenido " + result[0]
+
+
 def subir_basededatos(foto_patente, license_plate):
     global nuevo_valor
     nuevo_valor = 0
@@ -15,7 +49,7 @@ def subir_basededatos(foto_patente, license_plate):
         password=keys["password"],
         database=keys["database"],
         port=keys["port"]
-    )
+    )   
 
     parqueadero = keys["nombre"]
     cursor = conex.cursor()

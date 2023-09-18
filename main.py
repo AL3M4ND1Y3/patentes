@@ -7,8 +7,9 @@ import requests
 import os
 import uuid
 import tempfile
-from database import subir_basededatos  
+from database import subir_basededatos,obtener_username
 import json
+import threading
 
 config_file = 'config.json'
 
@@ -48,32 +49,49 @@ def leer_placa(img):
 
 
 def crear_interfaz():
-    global root, label
+    global root, label, estado_pantalla
 
     root = tk.Tk()
     root.attributes('-fullscreen', True)
 
+    screen_width = root.winfo_screenwidth()
+    screen_height = root.winfo_screenheight()
 
     label = tk.Label(root, font=('Helvetica', 30), fg='white')
     label.place(relx=0.5, rely=0.5, anchor=tk.CENTER)
 
-""" 
-def switch_to_red():
-    root.configure(bg='red')
-    label.configure(text='PARE', bg='red', fg='white')
-"""
+    estado_pantalla = 'naranja'  # Establecer el color inicial en naranja
+    change_to_orange()
+    
+    # Ciclo de eventos de Tkinter
+    root.mainloop()
+
 def change_to_green():
+    global user_label
+
     root.configure(bg='green')
     label.configure(text='PASE', bg='green', fg='white')
-    root.after(2000, root.destroy)
+
+    username = str(obtener_username(ultima_patente))
+    print(username)
+
+    # Crear una etiqueta para el nombre de usuario
+    user_label = tk.Label(root, text=username, bg="green", fg="white",font=('Helvetica', 20))
+    user_label.place(relx=0.5, rely=0.7, anchor=tk.CENTER)
+
+    root.after(2000, change_to_orange)
 
     global patente_detectado
     patente_detectado = False
 
 def change_to_orange():
+    global user_label
+
+    if 'user_label' in globals():
+        user_label.destroy()  # Eliminar la etiqueta del nombre de usuario
+
     root.configure(bg='orange')
     label.configure(text='No se pudo leer la placa', bg='orange', fg='white')
-
 
 def on_press_enter(photo_path,plate):
     data = leer_placa(photo_path)
@@ -89,9 +107,7 @@ def on_press_enter(photo_path,plate):
     ruta_foto = os.path.join(ruta_guardado, foto)
     cv2.imwrite(ruta_foto, cv2.imread(photo_path))
     if subir_basededatos(foto, plate):
-        crear_interfaz()
         change_to_green()
-        root.mainloop()
         global patente_detectado
         patente_detectado = False
 
@@ -99,7 +115,11 @@ def on_press_enter(photo_path,plate):
 if __name__ == "__main__":
     cap = cv2.VideoCapture(1, cv2.CAP_DSHOW)
     patente_detectado = False
-    ultima_patente = None
+    ultima_patente = None  
+
+    # Crear la interfaz en un hilo separado
+    thread = threading.Thread(target=crear_interfaz)
+    thread.start()
 
     while True:
         ret, frame = cap.read()
